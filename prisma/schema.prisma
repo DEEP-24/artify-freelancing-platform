@@ -1,0 +1,198 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Admin {
+    id       String @id @default(uuid())
+    name     String
+    email    String @unique
+    password String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("admin")
+}
+
+model Customer {
+    id        String     @id @default(uuid())
+    name      String
+    email     String     @unique
+    password  String
+    payment   Payment[]
+    Post      Post[]
+    Projects  Project[]
+    documents Document[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("customers")
+}
+
+model Editor {
+    id         String @id @default(uuid())
+    name       String
+    email      String @unique
+    password   String
+    skills     String
+    experience String
+    portfolio  String
+    awards     String
+
+    Bid      Bid[]
+    payments Payment[]
+    projects Project[]
+
+    documents Document[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("editors")
+}
+
+model Post {
+    id          String     @id @default(uuid())
+    title       String
+    description String
+    budget      Float
+    duration    Int
+    status      PostStatus
+    customerId  String
+    deadline    DateTime
+    categoryId  String
+    bids        Bid[]
+    category    Categories @relation(fields: [categoryId], references: [id])
+    customer    Customer   @relation(fields: [customerId], references: [id])
+    project     Project[]
+    documents   Document[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("posts")
+}
+
+model Categories {
+    id          String @id @default(uuid())
+    name        String
+    description String
+    image       String
+    post        Post[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("categories")
+}
+
+model Bid {
+    id       String  @id @default(uuid())
+    price    Float
+    comment  String
+    editorId String
+    postId   String
+    approved Boolean @default(false)
+    declined Boolean @default(false)
+
+    editor Editor @relation(fields: [editorId], references: [id])
+    post   Post   @relation(fields: [postId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("bids")
+}
+
+model Project {
+    id                String        @id @default(uuid())
+    status            ProjectStatus
+    payment           Payment?
+    customerDocuments Document[]    @relation("CustomerDocuments")
+    editorDocuments   Document[]    @relation("EditorDocuments")
+
+    customer   Customer @relation(fields: [customerId], references: [id])
+    customerId String
+    editor     Editor   @relation(fields: [editorId], references: [id])
+    editorId   String
+    post       Post     @relation(fields: [postId], references: [id])
+    postId     String
+
+    createdAt DateTime   @default(now())
+    updatedAt DateTime   @updatedAt
+    Document  Document[]
+
+    @@map("projects")
+}
+
+model Payment {
+    id            String        @id @default(uuid())
+    amount        Float
+    paymentMethod PaymentMethod
+
+    customer   Customer @relation(fields: [customerId], references: [id])
+    customerId String
+    editor     Editor   @relation(fields: [editorId], references: [id])
+    editorId   String
+    project    Project? @relation(fields: [projectId], references: [id])
+    projectId  String?  @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("payments")
+}
+
+model Document {
+    id          String       @id @default(uuid())
+    key         String       @unique
+    name        String
+    description String?
+    extension   String
+    bucket      String
+    region      String
+    imageUrl    String
+    type        DocumentType
+
+    editor            Editor?   @relation(fields: [editorId], references: [id])
+    editorId          String?
+    post              Post?     @relation(fields: [postId], references: [id])
+    postId            String?
+    project           Project   @relation(fields: [projectId], references: [id])
+    projectId         String
+    Customer          Customer? @relation(fields: [customerId], references: [id])
+    customerId        String?
+    customerProject   Project?  @relation("CustomerDocuments", fields: [customerProjectId], references: [id])
+    customerProjectId String?
+    editorProject     Project?  @relation("EditorDocuments", fields: [editorProjectId], references: [id])
+    editorProjectId   String?
+}
+
+enum PostStatus {
+    open
+    closed
+    in_progress
+    completed
+}
+
+enum ProjectStatus {
+    in_progress
+    completed
+    payment_pending
+}
+
+enum PaymentMethod {
+    CREDIT_CARD
+    DEBIT_CARD
+}
+
+enum DocumentType {
+    SOURCE
+    EDITED
+}
